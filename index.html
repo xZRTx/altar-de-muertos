@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El altar de muertos, nivel por nivel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E%F0%9F%8F%B5%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/asistente.css">
+<!-- Librería para generar el QR dentro del modal -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+    /* Estilos exclusivos para la ventana modal emergente */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+
+    .modal-content {
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        max-width: 380px;
+        width: 100%;
+        position: relative;
+        font-family: 'Source Sans 3', sans-serif;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: #e2e8f0;
+        border: none;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #334155;
+        font-weight: bold;
+        transition: background 0.2s;
+    }
+
+    .modal-close:hover {
+        background: #cbd5e1;
+    }
+
+    .modal-content h2 {
+        color: #1e293b;
+        font-size: 1.4rem;
+        margin-top: 10px;
+        margin-bottom: 8px;
+    }
+
+    .modal-content p {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+        line-height: 1.4;
+    }
+
+    .qr-box-modal {
+        background: #fff;
+        padding: 12px;
+        border-radius: 10px;
+        display: inline-block;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 15px;
+    }
+
+    .btn-modal-action {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        background-color: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        text-decoration: none;
+        margin-top: 10px;
+        transition: background 0.2s;
+    }
+
+    .btn-modal-action:hover {
+        background-color: #2563eb;
+    }
+
+    .btn-secondary-modal {
+        background-color: #e2e8f0;
+        color: #334155;
+    }
+
+    .btn-secondary-modal:hover {
+        background-color: #cbd5e1;
+    }
+
+    .btn-download-modal {
+        background-color: #10b981;
+        color: white;
+    }
+
+    .btn-download-modal:hover {
+        background-color: #059669;
+    }
+
+    /* Mensaje flotante de copiado */
+    #toast-modal {
+        visibility: hidden;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 6px 12px;
+        position: absolute;
+        bottom: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        font-size: 0.8rem;
+    }
+    #toast-modal.activo {
+        visibility: visible;
+    }
+</style>
+</head>
+<body>
+<div class="bar"><div class="bar-in">
+  <a class="brand" href="#top" id="brand"></a>
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <!-- Botón para abrir la ventana flotante -->
+    <button type="button" onclick="abrirModal()" id="btn-menu-inv" style="background-color: #3b82f6; color: #ffffff; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; font-family: 'Source Sans 3', sans-serif;">
+      Ver Invitación QR
+    </button>
+
+    <div class="seg" role="group" aria-label="Idioma / Language">
+      <button type="button" data-l="es" aria-pressed="true">ES</button>
+      <button type="button" data-l="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</div></div>
+
+<!-- VENTANA FLOTANTE (MODAL) -->
+<div id="modalInvitacion" class="modal-overlay">
+    <div class="modal-content">
+        <button class="modal-close" onclick="cerrarModal()">&times;</button>
+        <h2 id="m-title">¡Estás Invitado!</h2>
+        <p id="m-desc">Escanea este código QR con tu celular, descarga la imagen o copia el enlace.</p>
+        
+        <div class="qr-box-modal" id="qr-wrapper">
+            <div id="qrcode-modal"></div>
+        </div>
+
+        <div>
+            <!-- Botón de descarga de la imagen QR -->
+            <button onclick="descargarQR()" class="btn-modal-action btn-download-modal" id="m-btn-download">Descargar QR</button>
+            <button onclick="copiarUrlModal()" class="btn-modal-action btn-secondary-modal" id="m-btn-copy">Copiar Enlace</button>
+        </div>
+
+        <div id="toast-modal">¡Copiado!</div>
+    </div>
+</div>
+
+<header class="hero" id="top"><div class="hero-in">
+  <div><h1 id="t-title"></h1><p id="t-intro"></p><a class="cta" href="#n1" id="t-cta"></a></div>
+  <nav class="altar" id="altar"></nav>
+</div></header>
+<div class="wrap">
+  <aside class="index"><ol id="index"></ol></aside>
+  <main><nav class="chips" id="chips"></nav><div id="levels"></div></main>
+</div>
+<footer id="t-foot"></footer>
+
+<script>
+    // -------------------------------------------------------------
+    // ENLACE CONFIGURADO
+    // -------------------------------------------------------------
+    const urlDestino = "https://altardemuertos.free.nf/";
+
+    // Generar QR dentro del modal (solo una vez)
+    let qrGenerado = false;
+    function abrirModal() {
+        document.getElementById("modalInvitacion").style.display = "flex";
+        if (!qrGenerado) {
+            new QRCode(document.getElementById("qrcode-modal"), {
+                text: urlDestino,
+                width: 160,
+                height: 160,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            qrGenerado = true;
+        }
+    }
+
+    function cerrarModal() {
+        document.getElementById("modalInvitacion").style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        let modal = document.getElementById("modalInvitacion");
+        if (event.target == modal) {
+            cerrarModal();
+        }
+    }
+
+    // Traducciones manuales para el botón y la ventana modal
+    const textosModal = {
+        es: {
+            btnNav: "Ver Invitación QR",
+            title: "¡Estás Invitado!",
+            desc: "Escanea este código QR con tu celular, descarga la imagen o copia el enlace.",
+            btnDownload: "Descargar QR",
+            btnCopy: "Copiar Enlace",
+            toast: "¡Enlace copiado!"
+        },
+        en: {
+            btnNav: "View QR Invitation",
+            title: "You're Invited!",
+            desc: "Scan this QR code with your phone, download the image or copy the link.",
+            btnDownload: "Download QR",
+            btnCopy: "Copy Link",
+            toast: "Link copied!"
+        }
+    };
+
+    // Función para actualizar los textos según el idioma seleccionado
+    function actualizarIdiomaModal(lang) {
+        const t = textosModal[lang] || textosModal.es;
+        document.getElementById("btn-menu-inv").innerText = t.btnNav;
+        document.getElementById("m-title").innerText = t.title;
+        document.getElementById("m-desc").innerText = t.desc;
+        document.getElementById("m-btn-download").innerText = t.btnDownload;
+        document.getElementById("m-btn-copy").innerText = t.btnCopy;
+        document.getElementById("toast-modal").innerText = t.toast;
+    }
+
+    // Escuchamos los clics en los botones de idioma de tu página web (ES / EN)
+    document.addEventListener("DOMContentLoaded", () => {
+        const botonesIdioma = document.querySelectorAll('.seg button');
+        botonesIdioma.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const lang = btn.getAttribute('data-l');
+                if (lang) {
+                    actualizarIdiomaModal(lang);
+                }
+            });
+        });
+    });
+
+    // Función para descargar la imagen del QR generada
+    function descargarQR() {
+        const imgQR = document.querySelector("#qrcode-modal img");
+        const canvasQR = document.querySelector("#qrcode-modal canvas");
+        
+        let urlImagen = "";
+        if (imgQR && imgQR.src) {
+            urlImagen = imgQR.src;
+        } else if (canvasQR) {
+            urlImagen = canvasQR.toDataURL("image/png");
+        }
+
+        if (urlImagen) {
+            const enlaceDescarga = document.createElement("a");
+            enlaceDescarga.href = urlImagen;
+            enlaceDescarga.download = "codigo-qr-altar.png";
+            document.body.appendChild(enlaceDescarga);
+            enlaceDescarga.click();
+            document.body.removeChild(enlaceDescarga);
+        } else {
+            alert("El código QR aún se está generando. Inténtalo de nuevo en un segundo.");
+        }
+    }
+
+    function copiarUrlModal() {
+        navigator.clipboard.writeText(urlDestino).then(() => {
+            const toast = document.getElementById("toast-modal");
+            toast.classList.add("activo");
+            setTimeout(() => { toast.classList.remove("activo"); }, 2500);
+        });
+    }
+</script>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/config.js"></script>
+<script src="js/asistente.js"></script>
+</body>
+</html>
